@@ -7,7 +7,10 @@ SoftwareSerial bluetoothSerial(10, 11);
 Servo leftMotor;
 Servo rightMotor;
 
+const long WATCHDOG_BUFFER = 1000;
+
 bool enabled = false;
+long lastUpdate;
 
 void enable();
 void disable();
@@ -29,20 +32,47 @@ void loop() {
   char json[100]; //Receive from bluetooth SoftwareSerial
   char temp = -1;
   int index = 0;
-  while(bluetoothSerial.available() > 0 && (index < sizeof(json) - 1)) {
-    temp = bluetoothSerial.read();
-    json[index] = temp;
-    index++;
-    json[index] = '\0';
-  }
 
-  JsonObject& root = jsonBuffer.parseObject(json);
-
-  if(!root.success()) {
-    Serial.print("Failed to parse! (");
+  if(bluetoothSerial.available() > 0) {
+    while(bluetoothSerial.available() > 0 && (index < sizeof(json) - 1)) {
+      temp = bluetoothSerial.read();
+      json[index] = temp;
+      index++;
+      json[index] = '\0';
+    }
+  
+    Serial.print("Received Data: ");
     Serial.print(json);
-    Serial.print(")");
-    return;
+  
+    JsonObject& root = jsonBuffer.parseObject(json);
+  
+    if(!root.success()) {
+      Serial.print(" Parsing failed!");
+    } else {
+      Serial.print(" Parsing successful!");
+
+      const char* mName = root["mName"];
+      if(strcmp(mName, "KudosEnable") == 0) { //KUDOS ENABLE PACKET
+        bool kEnabled = root["mData"];
+        Serial.print(" KudosEnable is ");
+        Serial.print(kEnabled);
+        
+      } else if(strcmp(mName, "KudosDrive") == 0) { //KUDOS DRIVE PACKET
+        double kX = root["mData"][0];
+        double kY = root["mData"][1];
+        Serial.print(" KudosDrive is [");
+        Serial.print(kX);
+        Serial.print(", ");
+        Serial.print(kY);
+        Serial.print("]");
+      }
+
+      lastUpdate = millis();
+    }
+
+    //if(lastUpdate
+    
+    Serial.println();
   }
 }
 
