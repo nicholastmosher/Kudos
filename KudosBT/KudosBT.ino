@@ -1,15 +1,11 @@
-#include <XBOXRECV.h>
-#include <SPI.h>
-#include <Servo.h>
+#include <ArduinoJson.h>
+#include <SoftwareSerial.h>
+#include <Servo.h>;
 
-USB Usb;
-XBOXRECV Xbox(&Usb);
-
+StaticJsonBuffer<200> jsonBuffer;
+SoftwareSerial bluetoothSerial(10, 11);
 Servo leftMotor;
 Servo rightMotor;
-
-const int XBOX_HAT_MAX = 32767;
-const int XBOX_HAT_MIN = -32768;
 
 bool enabled = false;
 
@@ -17,42 +13,41 @@ void enable();
 void disable();
 void disEnable();
 
-int16_t getLeftY();
-int16_t getRightX();
-
 void setup() {
   Serial.begin(9600);
   #if !defined(__MIPSEL__)
     //while (!Serial); // Wait for serial port to connect - used on Leonardo, Teensy and other boards with built-in USB CDC serial connection
   #endif
-  if (Usb.Init() == -1) {
-    Serial.print(F("\r\nOSC did not start"));
-    while (1); //halt
-  }
-  Serial.print(F("\r\nXbox Wireless Receiver Library Started"));
+
+  bluetoothSerial.begin(57600);
+  
   enable();
 }
 
 void loop() {
-  Usb.Task();
-  if(Xbox.XboxReceiverConnected) {
-    if(Xbox.Xbox360Connected[0]) {
-      
-      if(Xbox.getButtonClick(XBOX, 0)) {
-        disEnable();
-      }
-      
-      if(enabled) {
-        arcadeDrive(map(getLeftY(), XBOX_HAT_MIN, XBOX_HAT_MAX, 0, 180), map(getRightX(), XBOX_HAT_MIN, XBOX_HAT_MAX, 0, 180));
-      }
-    }
+
+  char json[100]; //Receive from bluetooth SoftwareSerial
+  char temp = -1;
+  int index = 0;
+  while(bluetoothSerial.available() > 0 && (index < sizeof(json) - 1)) {
+    temp = bluetoothSerial.read();
+    json[index] = temp;
+    index++;
+    json[index] = '\0';
   }
-  Serial.println();
+
+  JsonObject& root = jsonBuffer.parseObject(json);
+
+  if(!root.success()) {
+    Serial.print("Failed to parse! (");
+    Serial.print(json);
+    Serial.print(")");
+    return;
+  }
 }
 
 void enable() {
   if(!enabled) {
-    Xbox.setLedOn(LED1, 0);
     leftMotor.attach(2);
     rightMotor.attach(3);
     enabled = true;
@@ -64,7 +59,6 @@ void enable() {
 
 void disable() {
   if(enabled) {
-    Xbox.setLedMode(ALTERNATING, 0);
     leftMotor.detach();
     rightMotor.detach();
     enabled = false;
@@ -79,23 +73,6 @@ void disEnable() {
     disable();
   } else {
     enable();
-  }
-}
-
-const int DEADBAND = 12000;
-int16_t getLeftY() {
-  if(Xbox.getAnalogHat(LeftHatY, 0) > DEADBAND || Xbox.getAnalogHat(LeftHatY, 0) < -DEADBAND) {
-    return Xbox.getAnalogHat(LeftHatY, 0);
-  } else {
-    return 0.0;
-  }
-}
-
-int16_t getRightX() {
-  if(Xbox.getAnalogHat(RightHatX, 0) > DEADBAND || Xbox.getAnalogHat(RightHatX, 0) < -DEADBAND) {
-    return Xbox.getAnalogHat(RightHatX, 0);
-  } else {
-    return 0.0;
   }
 }
 
