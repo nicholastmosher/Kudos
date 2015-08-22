@@ -11,6 +11,9 @@ Servo rightMotor;
 const int XBOX_HAT_MAX = 32767;
 const int XBOX_HAT_MIN = -32768;
 
+const int MOTOR_LEFT_PIN = 5;
+const int MOTOR_RIGHT_PIN = 6;
+
 bool enabled = false;
 
 void enable();
@@ -30,7 +33,6 @@ void setup() {
     while (1); //halt
   }
   Serial.print(F("\r\nXbox Wireless Receiver Library Started"));
-  enable();
 }
 
 void loop() {
@@ -46,6 +48,10 @@ void loop() {
         arcadeDrive(map(getLeftY(), XBOX_HAT_MIN, XBOX_HAT_MAX, 0, 180), map(getRightX(), XBOX_HAT_MIN, XBOX_HAT_MAX, 0, 180));
       }
     }
+    else
+    {
+      if(enabled) disable();
+    }
   }
   Serial.println();
 }
@@ -53,8 +59,8 @@ void loop() {
 void enable() {
   if(!enabled) {
     Xbox.setLedOn(LED1, 0);
-    leftMotor.attach(2);
-    rightMotor.attach(3);
+    leftMotor.attach(MOTOR_LEFT_PIN);
+    rightMotor.attach(MOTOR_RIGHT_PIN);
     enabled = true;
     Serial.println("Enabled!");
   } else {
