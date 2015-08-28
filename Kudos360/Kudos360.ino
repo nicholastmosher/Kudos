@@ -1,6 +1,7 @@
 #include <XBOXRECV.h>
 #include <SPI.h>
 #include <Servo.h>
+#include <SoftwareSerial.h>
 
 USB Usb;
 XBOXRECV Xbox(&Usb);
