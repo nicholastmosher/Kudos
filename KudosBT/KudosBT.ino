@@ -22,7 +22,7 @@ void setup() {
     //while (!Serial); // Wait for serial port to connect - used on Leonardo, Teensy and other boards with built-in USB CDC serial connection
   #endif
 
-  bluetoothSerial.begin(57600);
+  bluetoothSerial.begin(9600);
   
   enable();
 }
@@ -39,6 +39,7 @@ void loop() {
       json[index] = temp;
       index++;
       json[index] = '\0';
+      delay(1);
     }
   
     Serial.print("Received Data: ");
