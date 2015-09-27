@@ -53,8 +53,8 @@ void loop() {
     {
       if(enabled) disable();
     }
+    Serial.println();
   }
-  Serial.println();
 }
 
 void enable() {
