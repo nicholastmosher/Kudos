@@ -8,6 +8,9 @@ XBOXRECV Xbox(&Usb);
 Servo leftMotor;
 Servo rightMotor;
 
+const int PIN_MOTOR_LEFT = 5;
+const int PIN_MOTOR_RIGHT = 6;
+
 const int XBOX_HAT_MAX = 32767;
 const int XBOX_HAT_MIN = -32768;
 
@@ -53,8 +56,8 @@ void loop() {
 void enable() {
   if(!enabled) {
     Xbox.setLedOn(LED1, 0);
-    leftMotor.attach(2);
-    rightMotor.attach(3);
+    leftMotor.attach(PIN_MOTOR_LEFT);
+    rightMotor.attach(PIN_MOTOR_RIGHT);
     enabled = true;
     Serial.println("Enabled!");
   } else {
