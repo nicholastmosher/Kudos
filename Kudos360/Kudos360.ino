@@ -1,6 +1,8 @@
 #include <XBOXRECV.h>
 #include <SPI.h>
 #include <Servo.h>
+#include <PID.h>
+#include <NewPing.h>
 
 USB Usb;
 XBOXRECV Xbox(&Usb);
@@ -8,20 +10,43 @@ XBOXRECV Xbox(&Usb);
 Servo leftMotor;
 Servo rightMotor;
 
+const int TRIGGER_PIN = 12;
+const int ECHO_PIN = 11;
+const int MAX_DISTANCE = 200;
+
 const int PIN_MOTOR_LEFT = 5;
 const int PIN_MOTOR_RIGHT = 6;
 
 const int XBOX_HAT_MAX = 32767;
 const int XBOX_HAT_MIN = -32768;
 
+int mOutput = 0;
+
 bool enabled = false;
+
+const int DRIVE_MODES = 3;
+int driveMode = 0;
+
+const int CONTROL_MODES = 2;
+int controlMode = 0;
+int controlTap = 0;
+
+const int MAX_TARGET = 100;
+const int MIN_TARGET = 20;
+int target = 50;
 
 void enable();
 void disable();
 void disEnable();
 
+int pidSource();
+void pidOutput(int output);
+
 int16_t getLeftY();
 int16_t getRightX();
+
+NewPing sonar(TRIGGER_PIN, ECHO_PIN, MAX_DISTANCE);
+PIDController<int> distanceController(4.0, 0.001, 100, pidSource, pidOutput);
 
 void setup() {
   Serial.begin(9600);
@@ -33,7 +58,10 @@ void setup() {
     while (1); //halt
   }
   Serial.print(F("\r\nXbox Wireless Receiver Library Started"));
-  enable();
+  distanceController.registerTimeFunction(millis);
+  distanceController.setOutputBounds(-90, 90);
+  distanceController.setTarget(target);
+  //enable();
 }
 
 void loop() {
@@ -44,13 +72,67 @@ void loop() {
       if(Xbox.getButtonClick(XBOX, 0)) {
         disEnable();
       }
-      
-      if(enabled) {
-        arcadeDrive(map(getLeftY(), XBOX_HAT_MIN, XBOX_HAT_MAX, 0, 180), map(getRightX(), XBOX_HAT_MIN, XBOX_HAT_MAX, 0, 180));
+
+      if(Xbox.getButtonClick(Y, 0)) {
+        cycleDriveInput();
       }
+
+      if(Xbox.getButtonClick(X, 0)) {
+        controlTap = (controlTap + 1) % 2;
+        if(controlTap == 0) {
+          cycleControlMode();
+        }
+      }
+
+      if(Xbox.getButtonClick(UP, 0)) {
+        if(target < MAX_TARGET) {
+          target += 10;
+          distanceController.setTarget(target);
+        }
+      }
+
+      if(Xbox.getButtonClick(DOWN, 0)) {
+        if(target > MIN_TARGET) {
+          target -= 10;
+          distanceController.setTarget(target);
+        }
+      }
+
+      if(controlMode == 0) {
+          
+        if(driveMode == 0) {
+          arcadeDrive(map(getLeftY(), XBOX_HAT_MIN, XBOX_HAT_MAX, 0, 180), map(getRightX(), XBOX_HAT_MIN, XBOX_HAT_MAX, 0, 180));
+        } else if(driveMode == 1) {
+          arcadeDrive(map(getLeftY(), XBOX_HAT_MIN, XBOX_HAT_MAX, 0, 180), map(getLeftX(), XBOX_HAT_MIN, XBOX_HAT_MAX, 0, 180));
+        } else if(driveMode == 2) {
+          arcadeDrive(map(getRightY(), XBOX_HAT_MIN, XBOX_HAT_MAX, 0, 180), map(getRightX(), XBOX_HAT_MIN, XBOX_HAT_MAX, 0, 180));
+        }
+          
+      } else if(controlMode == 1) {
+        distanceController.tick();
+        int rightOutput = mOutput + 90;
+        int leftOutput = (-mOutput) + 90;
+        if(enabled) {
+          leftMotor.write(leftOutput);
+          rightMotor.write(rightOutput);
+        }
+      }
+      
+    } else {
+      disable();
     }
+  } else {
+    disable();
   }
   Serial.println();
+}
+
+void cycleDriveInput() {
+  driveMode = (driveMode + 1) % DRIVE_MODES;
+}
+
+void cycleControlMode() {
+  controlMode = (controlMode + 1) % CONTROL_MODES;
 }
 
 void enable() {
@@ -86,9 +168,25 @@ void disEnable() {
 }
 
 const int DEADBAND = 12000;
+int16_t getLeftX() {
+    if(Xbox.getAnalogHat(LeftHatX, 0) > DEADBAND || Xbox.getAnalogHat(LeftHatX, 0) < -DEADBAND) {
+    return Xbox.getAnalogHat(LeftHatX, 0);
+  } else {
+    return 0.0;
+  }
+}
+
 int16_t getLeftY() {
   if(Xbox.getAnalogHat(LeftHatY, 0) > DEADBAND || Xbox.getAnalogHat(LeftHatY, 0) < -DEADBAND) {
     return Xbox.getAnalogHat(LeftHatY, 0);
+  } else {
+    return 0.0;
+  }
+}
+
+int16_t getRightY() {
+  if(Xbox.getAnalogHat(RightHatY, 0) > DEADBAND || Xbox.getAnalogHat(RightHatY, 0) < -DEADBAND) {
+    return Xbox.getAnalogHat(RightHatY, 0);
   } else {
     return 0.0;
   }
@@ -143,3 +241,12 @@ void arcadeDrive(int16_t y, int16_t x) {
     rightMotor.write(rightPower);
   }
 }
+
+int pidSource() {
+  return sonar.ping_cm();
+}
+
+void pidOutput(int output) {
+  mOutput = output;
+}
+
