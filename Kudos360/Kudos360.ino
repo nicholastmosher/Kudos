@@ -50,6 +50,7 @@ PIDController<int> distanceController(4.0, 0.001, 100, pidSource, pidOutput);
 
 void setup() {
   Serial.begin(9600);
+  Serial.println("Started setup()");
   #if !defined(__MIPSEL__)
     //while (!Serial); // Wait for serial port to connect - used on Leonardo, Teensy and other boards with built-in USB CDC serial connection
   #endif
@@ -62,6 +63,7 @@ void setup() {
   distanceController.setOutputBounds(-90, 90);
   distanceController.setTarget(target);
   //enable();
+  Serial.println("Finished setup()");
 }
 
 void loop() {
