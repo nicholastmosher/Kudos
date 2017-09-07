@@ -70,7 +70,7 @@ void loop() {
   Usb.Task();
   if(Xbox.XboxReceiverConnected) {
     if(Xbox.Xbox360Connected[0]) {
-      
+
       if(Xbox.getButtonClick(XBOX, 0)) {
         disEnable();
       }
@@ -101,7 +101,7 @@ void loop() {
       }
 
       if(controlMode == 0) {
-          
+
         if(driveMode == 0) {
           arcadeDrive(map(getLeftY(), XBOX_HAT_MIN, XBOX_HAT_MAX, 0, 180), map(getRightX(), XBOX_HAT_MIN, XBOX_HAT_MAX, 0, 180));
         } else if(driveMode == 1) {
@@ -109,7 +109,7 @@ void loop() {
         } else if(driveMode == 2) {
           arcadeDrive(map(getRightY(), XBOX_HAT_MIN, XBOX_HAT_MAX, 0, 180), map(getRightX(), XBOX_HAT_MIN, XBOX_HAT_MAX, 0, 180));
         }
-          
+
       } else if(controlMode == 1) {
         distanceController.tick();
         int rightOutput = mOutput + 90;
@@ -119,7 +119,7 @@ void loop() {
           rightMotor.write(rightOutput);
         }
       }
-      
+
     } else {
       disable();
     }
@@ -169,7 +169,10 @@ void disEnable() {
   }
 }
 
+// Deadband can also be considered sensitivity. Setting to 1500 allows for it to ease into speeds.
+// IE: Slightly touching the stick allows for slow movement
 const int DEADBAND = 1500;
+
 int16_t getLeftX() {
     if(Xbox.getAnalogHat(LeftHatX, 0) > DEADBAND || Xbox.getAnalogHat(LeftHatX, 0) < -DEADBAND) {
     return Xbox.getAnalogHat(LeftHatX, 0);
@@ -208,23 +211,23 @@ void arcadeDrive(int16_t y, int16_t x) {
   Serial.print(y);
   Serial.print(", X power: ");
   Serial.print(x);
-  
+
   //Set left and right to y power
   int leftPower = y;
   int rightPower = y;
-  
+
   //Balance x around 0 (range -90 to 90).
   x -= 90;
   leftPower -= x;
   rightPower += x;
-  
+
   //Trim range for left
   if(leftPower > 180) {
     leftPower = 180;
   } else if(leftPower < 0) {
     leftPower = 0;
   }
-  
+
   //Trim range for right
   if(rightPower > 180) {
     rightPower = 180;
@@ -232,12 +235,12 @@ void arcadeDrive(int16_t y, int16_t x) {
     rightPower = 0;
   }
   rightPower = 180 - rightPower;
-  
+
   Serial.print(", Left power: ");
   Serial.print(leftPower);
   Serial.print(", Right power: ");
   Serial.print(rightPower);
-  
+
   if(enabled) {
     leftMotor.write(leftPower);
     rightMotor.write(rightPower);
