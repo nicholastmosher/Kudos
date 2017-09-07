@@ -169,7 +169,7 @@ void disEnable() {
   }
 }
 
-const int DEADBAND = 12000;
+const int DEADBAND = 1500;
 int16_t getLeftX() {
     if(Xbox.getAnalogHat(LeftHatX, 0) > DEADBAND || Xbox.getAnalogHat(LeftHatX, 0) < -DEADBAND) {
     return Xbox.getAnalogHat(LeftHatX, 0);
