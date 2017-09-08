@@ -1,8 +1,7 @@
-#include <XBOXRECV.h>
+#include "USB_Host_Shield_2.0/XBOXRECV.h"
 #include <SPI.h>
 #include <Servo.h>
-#include <PID.h>
-#include <NewPing.h>
+
 
 USB Usb;
 XBOXRECV Xbox(&Usb);
@@ -41,16 +40,9 @@ void disable();
 
 void disEnable();
 
-int pidSource();
-
-void pidOutput(int output);
-
 int16_t getLeftY();
 
 int16_t getRightX();
-
-NewPing sonar(TRIGGER_PIN, ECHO_PIN, MAX_DISTANCE);
-PIDController<int> distanceController(4.0, 0.001, 100, pidSource, pidOutput);
 
 void setup() {
     Serial.begin(9600);
@@ -63,9 +55,6 @@ void setup() {
         while (1); //halt
     }
     Serial.print(F("\r\nXbox Wireless Receiver Library Started"));
-    distanceController.registerTimeFunction(millis);
-    distanceController.setOutputBounds(-90, 90);
-    distanceController.setTarget(target);
     //enable();
     Serial.println("Finished setup()");
 }
@@ -93,14 +82,12 @@ void loop() {
             if (Xbox.getButtonClick(UP, 0)) {
                 if (target < MAX_TARGET) {
                     target += 10;
-                    distanceController.setTarget(target);
                 }
             }
 
             if (Xbox.getButtonClick(DOWN, 0)) {
                 if (target > MIN_TARGET) {
                     target -= 10;
-                    distanceController.setTarget(target);
                 }
             }
 
@@ -118,7 +105,6 @@ void loop() {
                 }
 
             } else if (controlMode == 1) {
-                distanceController.tick();
                 int rightOutput = mOutput + 90;
                 int leftOutput = (-mOutput) + 90;
                 if (enabled) {
@@ -252,13 +238,5 @@ void arcadeDrive(int16_t y, int16_t x) {
         leftMotor.write(leftPower);
         rightMotor.write(rightPower);
     }
-}
-
-int pidSource() {
-    return sonar.ping_cm();
-}
-
-void pidOutput(int output) {
-    mOutput = output;
 }
 
